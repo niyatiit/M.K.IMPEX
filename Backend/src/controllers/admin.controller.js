@@ -1,7 +1,11 @@
 import { apiError } from "../utils/apiError.util.js";
 import Admin from "../models/admin.model.js";
 import { apiResponse } from "../utils/apiResponse.util.js";
+import bcrypt from "bcrypt";
+import { generateToken } from "../utils/generateToken.util.js";
+import { Stock } from "../models/stock.model.js";
 
+// Registration
 const registerAdmin = async (req, res) => {
   // follow the step of the registeration
   // 1. get user detials from frontend means using the postman
@@ -72,4 +76,83 @@ const registerAdmin = async (req, res) => {
     .json(new apiResponse(200, createdAdmin, "Admin Created Successfully"));
 };
 
-export { registerAdmin };
+// Login
+const loginAdmin = async (req, res, next) => {
+  // Follow the step for the check the user login or not
+  // 1. get the email and passwrod
+  // 2. check if admin exists
+  // 3. if admin is not found
+  // 4. compare the password
+  // 5. password does not matched
+  // 6. id password mathced
+  // 7. send the success response
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      throw new apiError(400, "All fields are required");
+    }
+
+    const admin = await Admin.findOne({ email });
+    if (!admin) {
+      throw new apiError(
+        404,
+        "Admin is not Found Please try again enter the eamil and password"
+      );
+    }
+
+    if(admin.username === "kiran" && !admin.isApproved)
+    {
+      throw new apiError(403 , "Access denied. Awaiting approval from main admin")
+    }
+
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch) {
+      throw new apiError(401, "Invalid Password Please try again");
+    }
+
+    const token = generateToken(admin._id);
+
+    return res.status(200).json(
+      new apiResponse(200, "Login Successfull", {
+        token,
+      })
+    );
+  } catch (err) {
+    console.log("Something went wrong please try again ")
+    next(err);
+  }
+};
+
+// Using the Middleware and check the jwt 
+const getAllStock = async (req ,res ) =>{
+
+  try{
+    let stockItems;
+
+    if(req.user.username === "kiran"){
+      stockItems = await Stock.find( { addedBy : req.user._id}).populate("addedBy" , "username email")
+    }
+    else{
+      stockItems = await Stock.find().populate("addedBy" , "username email");
+    }
+    return res.status(200).json(new apiResponse(200 , stockItems ,"Stock Fatched Successfully" ))
+  }
+  catch(err)
+  {
+    return res.status(500).json(new apiResponse(500 , "Somthing Went Wrong"))
+  }
+}
+
+// Verificatio Approove 
+const approveAdmin = async ( req ,res) =>{
+  const { id }= req.params;
+
+  const admin = await Admin.findById(id);
+  if(!admin){
+    throw new apiError(404 , "Admin is not found")
+  }
+
+  return res.status(200).json(new apiResponse(200 , admin , "Admin approved Successfully"))
+}
+export { registerAdmin, loginAdmin , approveAdmin , getAllStock};

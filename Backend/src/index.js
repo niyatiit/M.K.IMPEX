@@ -18,8 +18,11 @@ connectDB()
 
 // Routes Import here 
 import { registerAdmin } from "./controllers/admin.controller.js";
+import { loginAdmin } from "./controllers/admin.controller.js"
 
 // Routes Export here 
 app.use("/api/v1/admin", registerAdmin);
+app.use("/api/admin/login",loginAdmin)
+
 
 export {app}
