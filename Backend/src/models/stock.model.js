@@ -9,6 +9,11 @@ const stockSchema = new mongoose.Schema(
     quantity: {
       type: Number,
       required: true,
+      min : 0,
+    },
+    price:{
+      type : Number,
+      required : true,
     },
     addedBy: {
       type: mongoose.Schema.Types.ObjectId,

@@ -3,7 +3,6 @@ import Admin from "../models/admin.model.js";
 import { apiResponse } from "../utils/apiResponse.util.js";
 import bcrypt from "bcrypt";
 import { generateToken } from "../utils/generateToken.util.js";
-import { Stock } from "../models/stock.model.js";
 
 // Registration
 const registerAdmin = async (req, res) => {
@@ -51,11 +50,12 @@ const registerAdmin = async (req, res) => {
   }
 
   //   Step 4 :
+  const hashedPassword = await bcrypt.hash(password,10)
   const admin = await Admin.create({
     username,
     fullName,
     email,
-    password,
+    password : hashedPassword,
     contactNo,
     role,
   });
@@ -124,26 +124,6 @@ const loginAdmin = async (req, res, next) => {
   }
 };
 
-// Using the Middleware and check the jwt 
-const getAllStock = async (req ,res ) =>{
-
-  try{
-    let stockItems;
-
-    if(req.user.username === "kiran"){
-      stockItems = await Stock.find( { addedBy : req.user._id}).populate("addedBy" , "username email")
-    }
-    else{
-      stockItems = await Stock.find().populate("addedBy" , "username email");
-    }
-    return res.status(200).json(new apiResponse(200 , stockItems ,"Stock Fatched Successfully" ))
-  }
-  catch(err)
-  {
-    return res.status(500).json(new apiResponse(500 , "Somthing Went Wrong"))
-  }
-}
-
 // Verificatio Approove 
 const approveAdmin = async ( req ,res) =>{
   const { id }= req.params;
@@ -153,6 +133,9 @@ const approveAdmin = async ( req ,res) =>{
     throw new apiError(404 , "Admin is not found")
   }
 
+  admin.isApproved = true;
+  await admin.save();
+
   return res.status(200).json(new apiResponse(200 , admin , "Admin approved Successfully"))
 }
-export { registerAdmin, loginAdmin , approveAdmin , getAllStock};
+export { registerAdmin, loginAdmin , approveAdmin };

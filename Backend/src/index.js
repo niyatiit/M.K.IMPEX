@@ -16,13 +16,18 @@ connectDB()
     console.log("MongoDB Faild !! ",err)
 })
 
+
 // Routes Import here 
-import { registerAdmin } from "./controllers/admin.controller.js";
-import { loginAdmin } from "./controllers/admin.controller.js"
+import { registerAdmin , loginAdmin } from "./controllers/admin.controller.js";
+import stockRouter from "./routes/stock.router.js"
 
 // Routes Export here 
 app.use("/api/v1/admin", registerAdmin);
 app.use("/api/admin/login",loginAdmin)
+app.use("/api/v1/stock" , stockRouter)
+
+
+
 
 
 export {app}
