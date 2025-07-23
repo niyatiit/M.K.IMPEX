@@ -1,43 +1,97 @@
-// controllers/stock.controller.js
+import { Stock } from "../models/stock.model.js";
 
-// Dummy database example (you'll replace this with real DB logic)
-let stocks = [];
+// ADD STOCK - Any admin can add stock
+export const addStock = async (req, res) => {
+  try {
+    const { itemName, quantity, price } = req.body;
 
-export const createStock = (req, res) => {
-  const stock = req.body;
-  stocks.push(stock);
-  res.status(201).json({ message: "Stock created", stock });
-};
+    const stock = new Stock({
+      itemName,
+      quantity,
+      price,
+      addedBy: req.admin._id,
+    });
 
-export const getAllStock = (req, res) => {
-  res.status(200).json({ stocks });
-};
+    await stock.save();
 
-export const getSingleStock = (req, res) => {
-  const { id } = req.params;
-  const stock = stocks.find((s) => s.id === id);
-  if (!stock) {
-    return res.status(404).json({ message: "Stock not found" });
+    res.status(201).json({
+      message: "Stock added successfully",
+      stock,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong", error });
   }
-  res.status(200).json({ stock });
 };
 
-export const updateStock = (req, res) => {
-  const { id } = req.params;
-  const index = stocks.findIndex((s) => s.id === id);
-  if (index === -1) {
-    return res.status(404).json({ message: "Stock not found" });
+// GET ALL STOCK
+export const getAllStock = async (req, res) => {
+  try {
+    const stocks = await Stock.find().populate("addedBy", "name email");
+    res.status(200).json({ stocks });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong", error });
   }
-  stocks[index] = { ...stocks[index], ...req.body };
-  res.status(200).json({ message: "Stock updated", stock: stocks[index] });
 };
 
-export const deleteStock = (req, res) => {
-  const { id } = req.params;
-  const index = stocks.findIndex((s) => s.id === id);
-  if (index === -1) {
-    return res.status(404).json({ message: "Stock not found" });
+// GET SINGLE STOCK BY ID
+export const getSingleStock = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const stock = await Stock.findById(id).populate("addedBy", "name email");
+
+    if (!stock) {
+      return res.status(404).json({ message: "Stock not found" });
+    }
+
+    res.status(200).json({ stock });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong", error });
   }
-  const deleted = stocks.splice(index, 1);
-  res.status(200).json({ message: "Stock deleted", stock: deleted[0] });
+};
+
+// UPDATE STOCK - Only if NOT Kiran
+export const updateStock = async (req, res) => {
+  try {
+    const adminName = req.admin.name.toLowerCase();
+
+    if (adminName === "kiran") {
+      return res.status(403).json({ message: "Kiran is not allowed to update stock" });
+    }
+
+    const { id } = req.params;
+    const updatedStock = await Stock.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedStock) {
+      return res.status(404).json({ message: "Stock not found" });
+    }
+
+    res.status(200).json({ message: "Stock updated", stock: updatedStock });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong", error });
+  }
+};
+
+// DELETE STOCK - Only if NOT Kiran
+export const deleteStock = async (req, res) => {
+  try {
+    const adminName = req.admin.name.toLowerCase();
+
+    if (adminName === "kiran") {
+      return res.status(403).json({ message: "Kiran is not allowed to delete stock" });
+    }
+
+    const { id } = req.params;
+    const deletedStock = await Stock.findByIdAndDelete(id);
+
+    if (!deletedStock) {
+      return res.status(404).json({ message: "Stock not found" });
+    }
+
+    res.status(200).json({ message: "Stock deleted", stock: deletedStock });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong", error });
+  }
 };

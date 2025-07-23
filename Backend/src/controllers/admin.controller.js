@@ -6,75 +6,55 @@ import { generateToken } from "../utils/generateToken.util.js";
 
 // Registration
 const registerAdmin = async (req, res) => {
-  // follow the step of the registeration
-  // 1. get user detials from frontend means using the postman
-  // 2. validation  - i) not empty
-  // 3. check if user already exits : username , email
-  // 4. create user object - create entry in gb
-  // 5. remove the password and refresh token field from response
-  // 6. check for the user creation
-  // 7. retrun response
-
-  //   Step 1 :
   const { username, fullName, email, password, contactNo, role } = req.body;
-  console.log(
-    "username : ",
-    username,
-    "\n fullName : ",
-    fullName,
-    "\nEmail : ",
-    email,
-    "\n password : ",
-    password,
-    "\n Contac No : ",
-    contactNo,
-    "\n Role : ",
-    role
-  );
-  //   Step 2 :
+
+  // Step 2: Validation
   if (
     [username, fullName, email, password, contactNo, role].some(
-      (field) => !field || field.trim() === ""
+      (field) => String(field).trim() === ""
     )
   ) {
     throw new apiError(400, "All Fields are required");
   }
 
-  // Step 3 :
-  const exitingAdmin = await Admin.findOne({
+  // Step 3: Check if already exists
+  const existingAdmin = await Admin.findOne({
     $or: [{ username }, { email }],
   });
-
-  if (exitingAdmin) {
-    throw new apiError(409, "Admin is already exits ");
+  if (existingAdmin) {
+    throw new apiError(409, "Admin already exists");
   }
 
-  //   Step 4 :
-  const hashedPassword = await bcrypt.hash(password,10)
+  // Step 4: Hash password
+  const hashedPassword = await bcrypt.hash(password, 10);
   const admin = await Admin.create({
     username,
     fullName,
     email,
-    password : hashedPassword,
+    password: hashedPassword,
     contactNo,
     role,
+    isApproved: username === "kiran" ? false : true, // ✅ only Kiran needs approval
   });
 
-  //   Step 5 :
-  const createdAdmin = await Admin.findById(admin._id).select(
-    "-password" // this is the syntax not show the password
-  );
+  // Step 5: Clean up sensitive fields
+  const createdAdmin = await Admin.findById(admin._id).select("-password");
 
-  // Step 6 :
-  if (!createdAdmin) {
-    throw new apiError(500, "Somthing went wrong in the register admin");
+  // Step 6: Notify Hiren & Apoorv if Kiran registers
+  if (username === "kiran") {
+    console.log(
+      `🔔 Notification: Kiran registered and needs approval. Please notify Hiren and Apoorv via email or admin dashboard.`
+    );
+
+    // Optional: You can trigger email sending logic here using nodemailer/sendgrid etc.
   }
 
-  // step 7:
+  // Step 7: Send response
   return res
     .status(201)
     .json(new apiResponse(200, createdAdmin, "Admin Created Successfully"));
 };
+
 
 // Login
 const loginAdmin = async (req, res, next) => {
@@ -89,7 +69,7 @@ const loginAdmin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (email === "" || password === "") {
       throw new apiError(400, "All fields are required");
     }
 
@@ -101,9 +81,11 @@ const loginAdmin = async (req, res, next) => {
       );
     }
 
-    if(admin.username === "kiran" && !admin.isApproved)
-    {
-      throw new apiError(403 , "Access denied. Awaiting approval from main admin")
+    if (admin.username === "kiran" && !admin.isApproved) {
+      throw new apiError(
+        403,
+        "Access denied. Awaiting approval from main admin"
+      );
     }
 
     const isMatch = await bcrypt.compare(password, admin.password);
@@ -119,23 +101,25 @@ const loginAdmin = async (req, res, next) => {
       })
     );
   } catch (err) {
-    console.log("Something went wrong please try again ")
+    console.log("Something went wrong please try again ");
     next(err);
   }
 };
 
-// Verificatio Approove 
-const approveAdmin = async ( req ,res) =>{
-  const { id }= req.params;
+// Verificatio Approove
+const approveAdmin = async (req, res) => {
+  const { id } = req.params;
 
   const admin = await Admin.findById(id);
-  if(!admin){
-    throw new apiError(404 , "Admin is not found")
+  if (!admin) {
+    throw new apiError(404, "Admin is not found");
   }
 
   admin.isApproved = true;
   await admin.save();
 
-  return res.status(200).json(new apiResponse(200 , admin , "Admin approved Successfully"))
-}
-export { registerAdmin, loginAdmin , approveAdmin };
+  return res
+    .status(200)
+    .json(new apiResponse(200, admin, "Admin approved Successfully"));
+};
+export { registerAdmin, loginAdmin, approveAdmin };

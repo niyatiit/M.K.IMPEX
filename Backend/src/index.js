@@ -23,7 +23,7 @@ import stockRouter from "./routes/stock.router.js"
 
 // Routes Export here 
 app.use("/api/v1/admin", registerAdmin);
-app.use("/api/admin/login",loginAdmin)
+app.use("/api/admin/",loginAdmin)
 app.use("/api/v1/stock" , stockRouter)
 
 

@@ -1,28 +1,44 @@
 import { Router } from "express";
 import {
-  createStock,
+  addStock,
   getAllStock,
   getSingleStock,
   updateStock,
-  deleteStock
+  deleteStock,
 } from "../controllers/stock.controller.js";
 import { verifyToken } from "../middlewares/authMiddleware.js";
+import { allowRoles } from "../middlewares/checkRole.js";
 
 const router = Router();
 
-// Create a new stock
-router.post("/create", verifyToken, createStock);
+// ✅ Add new stock to database
+router.post(
+  "/create",
+  verifyToken,
+  allowRoles("kiran", "hiren", "apoorv"),
+  addStock
+);
 
-// Get all stocks
+// ✅ Get all stock items
 router.get("/all", verifyToken, getAllStock);
 
-// Get a single stock by ID
+// ✅ Get one stock item by ID
 router.get("/:id", verifyToken, getSingleStock);
 
-// Update stock by ID
-router.put("/update/:id", verifyToken, updateStock);
+// ✅ Update a stock item
+router.put(
+  "/update/:id",
+  verifyToken,
+  allowRoles("hiren", "apoorv"),
+  updateStock
+);
 
-// Delete stock by ID
-router.delete("/delete/:id", verifyToken, deleteStock);
+// ✅ Delete a stock item
+router.delete(
+  "/delete/:id",
+  verifyToken,
+  allowRoles("hiren", "apoorv"),
+  deleteStock
+);
 
 export default router;
