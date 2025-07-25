@@ -98,6 +98,11 @@ const loginAdmin = async (req, res, next) => {
     return res.status(200).json(
       new apiResponse(200, "Login Successfull", {
         token,
+        user : {
+          id : admin._id,
+          username : admin.username,
+          role : admin.role,
+        }
       })
     );
   } catch (err) {
@@ -122,4 +127,12 @@ const approveAdmin = async (req, res) => {
     .status(200)
     .json(new apiResponse(200, admin, "Admin approved Successfully"));
 };
-export { registerAdmin, loginAdmin, approveAdmin };
+
+const adminDashboard = (req,res) =>{
+  res.status(200).json({
+    success : true,
+    message : `Welcome ${req.admin.fullName}, you are in the admin dashboard!`,
+    role : req.admin.role
+  })
+}
+export { registerAdmin, loginAdmin, approveAdmin ,adminDashboard };

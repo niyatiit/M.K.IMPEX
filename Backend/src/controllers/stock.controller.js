@@ -1,9 +1,14 @@
 import { Stock } from "../models/stock.model.js";
+import mongoose from "mongoose";
 
 // ADD STOCK - Any admin can add stock
 export const addStock = async (req, res) => {
   try {
     const { itemName, quantity, price } = req.body;
+
+    if (!itemName || !quantity || !price) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
 
     const stock = new Stock({
       itemName,
@@ -37,6 +42,10 @@ export const getAllStock = async (req, res) => {
 export const getSingleStock = async (req, res) => {
   try {
     const { id } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid stock ID" });
+    }
     const stock = await Stock.findById(id).populate("addedBy", "name email");
 
     if (!stock) {
@@ -55,10 +64,15 @@ export const updateStock = async (req, res) => {
     const adminName = req.admin.name.toLowerCase();
 
     if (adminName === "kiran") {
-      return res.status(403).json({ message: "Kiran is not allowed to update stock" });
+      return res
+        .status(403)
+        .json({ message: "Kiran is not allowed to update stock" });
     }
 
     const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid stock ID" });
+    }
     const updatedStock = await Stock.findByIdAndUpdate(id, req.body, {
       new: true,
       runValidators: true,
@@ -77,13 +91,18 @@ export const updateStock = async (req, res) => {
 // DELETE STOCK - Only if NOT Kiran
 export const deleteStock = async (req, res) => {
   try {
-    const adminName = req.admin.name.toLowerCase();
+    const adminName = req.admin.fullName.toLowerCase();
 
     if (adminName === "kiran") {
-      return res.status(403).json({ message: "Kiran is not allowed to delete stock" });
+      return res
+        .status(403)
+        .json({ message: "Kiran is not allowed to delete stock" });
     }
 
     const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid stock ID" });
+    }
     const deletedStock = await Stock.findByIdAndDelete(id);
 
     if (!deletedStock) {
